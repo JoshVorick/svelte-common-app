@@ -1,9 +1,32 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
+	import { analytics } from '$lib/analytics';
+	import { logger } from '$lib/logger';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	onMount(() => {
+		analytics.ui.componentMounted('DashboardPage');
+		analytics.ui.pageViewed('dashboard', data.user?.id);
+		logger.info('Dashboard loaded', { 
+			component: 'DashboardPage',
+			userId: data.user?.id,
+			metadata: { hasSession: !!data.session }
+		});
+	});
+
+	function handleStatsCardClick(cardType: string) {
+		analytics.ui.buttonClicked(`stats-${cardType}`, 'DashboardPage', data.user?.id);
+		analytics.features.featureUsed('stats-view', data.user?.id, { cardType });
+		logger.info('Stats card clicked', { 
+			component: 'DashboardPage',
+			userId: data.user?.id,
+			metadata: { cardType }
+		});
+	}
 </script>
 
 <div class="px-4 sm:px-0">
@@ -60,21 +83,39 @@
 							<p class="text-sm font-medium">User john@example.com signed up</p>
 							<p class="text-xs text-gray-600">2 hours ago</p>
 						</div>
-						<Button variant="outline" size="sm">View</Button>
+						<Button 
+							variant="outline" 
+							size="sm"
+							onclick={() => handleStatsCardClick('activity-signup')}
+						>
+							View
+						</Button>
 					</div>
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-sm font-medium">Payment received from jane@example.com</p>
 							<p class="text-xs text-gray-600">4 hours ago</p>
 						</div>
-						<Button variant="outline" size="sm">View</Button>
+						<Button 
+							variant="outline" 
+							size="sm"
+							onclick={() => handleStatsCardClick('activity-payment')}
+						>
+							View
+						</Button>
 					</div>
 					<div class="flex items-center justify-between">
 						<div>
 							<p class="text-sm font-medium">New feature request submitted</p>
 							<p class="text-xs text-gray-600">6 hours ago</p>
 						</div>
-						<Button variant="outline" size="sm">View</Button>
+						<Button 
+							variant="outline" 
+							size="sm"
+							onclick={() => handleStatsCardClick('activity-feature')}
+						>
+							View
+						</Button>
 					</div>
 				</div>
 			</CardContent>

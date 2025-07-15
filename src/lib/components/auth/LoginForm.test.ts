@@ -12,13 +12,18 @@ describe('LoginForm', () => {
 	});
 
 	it('shows validation error for empty fields', async () => {
-		render(LoginForm);
+		render(LoginForm, {
+			props: {
+				onSubmit: vi.fn()
+			}
+		});
 		
-		const submitButton = screen.getByRole('button', { name: 'Sign In' });
-		await fireEvent.click(submitButton);
+		const submitButtons = screen.getAllByRole('button', { name: 'Sign In' });
+		await fireEvent.click(submitButtons[0]);
 		
 		// Form should not submit with empty fields due to HTML5 validation
-		expect(screen.getByDisplayValue('')).toBeInTheDocument();
+		const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
+		expect(emailInput.value).toBe('');
 	});
 
 	it('updates input values when user types', async () => {
@@ -35,13 +40,15 @@ describe('LoginForm', () => {
 	});
 
 	it('shows loading state when form is submitted', async () => {
-		render(LoginForm);
+		render(LoginForm, {
+			props: {
+				loading: true,
+				onSubmit: vi.fn()
+			}
+		});
 		
-		const form = screen.getByRole('form');
-		await fireEvent.submit(form);
-		
-		// This would require mocking the form submission
-		// For now, just verify the form exists
-		expect(form).toBeInTheDocument();
+		const submitButton = screen.getByRole('button', { name: 'Signing in...' });
+		expect(submitButton).toBeInTheDocument();
+		expect(submitButton).toBeDisabled();
 	});
 });
