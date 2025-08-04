@@ -11,7 +11,7 @@ export interface CookieInterface {
 	/** Set a cookie with value and options */
 	set: (key: string, value: string, options: any) => void;
 	/** Remove a cookie by key */
-	remove: (key: string, options: any) => void;
+	delete: (key: string, options: any) => void;
 }
 
 /**
@@ -90,7 +90,7 @@ export const createSupabaseServerClient = (cookies: CookieInterface): SupabaseCl
 		cookies: {
 			get: (key) => cookies.get(key),
 			set: (key, value, options) => cookies.set(key, value, options),
-			remove: (key, options) => cookies.remove(key, options)
+			remove: (key, options) => cookies.delete(key, options)
 		}
 	});
 };

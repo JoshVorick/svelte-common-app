@@ -138,7 +138,7 @@ class Logger {
         if (sentry) {
           if (logEntry.context?.error) {
             sentry.captureException(logEntry.context.error, { 
-              extra: logEntry.context 
+              extra: logEntry.context as Record<string, any>
             });
           } else {
             sentry.captureMessage(logEntry.message, 'error');
@@ -147,7 +147,7 @@ class Logger {
       }
 
       // Send to custom logging endpoint
-      if (typeof window !== 'undefined' && window.fetch) {
+      if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
         await fetch('/api/logs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

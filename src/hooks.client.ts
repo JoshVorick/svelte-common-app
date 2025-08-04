@@ -12,8 +12,10 @@ export const handleError: HandleClientError = ({ error, event, status, message }
 // Set up auth listener
 const supabase = createSupabaseLoadClient();
 
-supabase.auth.onAuthStateChange((event, session) => {
+supabase.auth.onAuthStateChange(async (event) => {
 	if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+		// Validate the auth state with getUser() for security
+		await supabase.auth.getUser();
 		invalidateAll();
 	}
 });

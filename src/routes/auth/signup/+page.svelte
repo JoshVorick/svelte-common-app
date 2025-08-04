@@ -1,84 +1,84 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import type { ActionData } from './$types';
+  import { page } from '$app/stores';
+  import { enhance } from '$app/forms';
+  import type { ActionData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
-
-	let loading = $state(false);
-	let email = $state('');
-	let password = $state('');
-	let confirmPassword = $state('');
+  export let form: ActionData;
+  
+  let email = $page.url.searchParams.get('email') || '';
+  let sending = false;
 </script>
 
-<Card>
-	<CardHeader>
-		<CardTitle>Sign Up</CardTitle>
-	</CardHeader>
-	<CardContent>
-		<form method="POST" use:enhance={() => {
-			loading = true;
-			return async ({ result, update }) => {
-				loading = false;
-				if (result.type === 'redirect') {
-					goto(result.location);
-				} else {
-					await update();
-				}
-			};
-		}}>
-			<div class="space-y-4">
-				<div>
-					<Label for="email">Email</Label>
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						required
-						bind:value={email}
-						placeholder="Enter your email"
-					/>
-				</div>
-				<div>
-					<Label for="password">Password</Label>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						required
-						bind:value={password}
-						placeholder="Enter your password"
-					/>
-				</div>
-				<div>
-					<Label for="confirmPassword">Confirm Password</Label>
-					<Input
-						id="confirmPassword"
-						name="confirmPassword"
-						type="password"
-						required
-						bind:value={confirmPassword}
-						placeholder="Confirm your password"
-					/>
-				</div>
-				{#if form?.error}
-					<div class="text-red-500 text-sm">{form.error}</div>
-				{/if}
-				{#if form?.success}
-					<div class="text-green-500 text-sm">{form.success}</div>
-				{/if}
-				<Button type="submit" disabled={loading} class="w-full">
-					{loading ? 'Creating account...' : 'Sign Up'}
-				</Button>
-			</div>
-		</form>
-		<div class="mt-4 text-center">
-			<span class="text-sm text-gray-600">Already have an account?</span>
-			<a href="/auth/login" class="text-blue-600 hover:text-blue-500 ml-1">Sign in</a>
-		</div>
-	</CardContent>
-</Card>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Create your account
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Enter your email to receive a magic link
+      </p>
+    </div>
+    
+    <form method="POST" use:enhance={() => {
+      sending = true;
+      return async ({ update }) => {
+        sending = false;
+        await update();
+      };
+    }} class="mt-8 space-y-6">
+      <div>
+        <label for="email" class="sr-only">Email address</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          bind:value={email}
+          placeholder="you@company.com"
+          required
+          class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+        />
+      </div>
+      
+      <div>
+        <button
+          type="submit"
+          disabled={sending}
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sending ? 'Sending...' : 'Send magic link'}
+        </button>
+      </div>
+
+      <div class="text-center">
+        <a href="/auth/login" class="text-sm text-indigo-600 hover:text-indigo-500">
+          Already have an account? Sign in
+        </a>
+      </div>
+    </form>
+    
+    {#if form?.success}
+      <div class="rounded-md bg-green-50 p-4">
+        <div class="text-sm text-green-700">
+          Check your email for the magic link to complete signup.
+        </div>
+      </div>
+    {/if}
+    
+    {#if form?.message}
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="text-sm text-red-700">
+          {form.message}
+        </div>
+      </div>
+    {/if}
+
+    {#if form?.errors?.email}
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="text-sm text-red-700">
+          {form.errors.email[0]}
+        </div>
+      </div>
+    {/if}
+  </div>
+</div>

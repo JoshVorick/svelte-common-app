@@ -10,22 +10,20 @@ test.describe('Authentication Flow', () => {
 		// Should redirect to login page
 		await expect(page).toHaveURL('/auth/login');
 		
-		// Should show login form
+		// Should show login form with magic link
 		await expect(page.getByRole('heading', { name: 'Sign In' })).toBeVisible();
 		await expect(page.getByLabel('Email')).toBeVisible();
-		await expect(page.getByLabel('Password')).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible();
 	});
 
 	test('should show validation errors for invalid login', async ({ page }) => {
 		await page.goto('/auth/login');
 		
 		// Try to submit with empty fields
-		await page.getByRole('button', { name: 'Sign In' }).click();
+		await page.getByRole('button', { name: 'Send Magic Link' }).click();
 		
 		// HTML5 validation should prevent submission
 		await expect(page.getByLabel('Email')).toHaveAttribute('required');
-		await expect(page.getByLabel('Password')).toHaveAttribute('required');
 	});
 
 	test('should navigate to signup page', async ({ page }) => {
@@ -36,22 +34,17 @@ test.describe('Authentication Flow', () => {
 		
 		// Should navigate to signup page
 		await expect(page).toHaveURL('/auth/signup');
-		await expect(page.getByRole('heading', { name: 'Sign Up' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
 	});
 
 	test('should show validation errors for invalid signup', async ({ page }) => {
 		await page.goto('/auth/signup');
 		
-		// Fill in mismatched passwords
-		await page.getByLabel('Email').fill('test@example.com');
-		await page.getByLabel('Password').fill('password123');
-		await page.getByLabel('Confirm Password').fill('password456');
+		// Try to submit with empty email
+		await page.getByRole('button', { name: 'Send Magic Link' }).click();
 		
-		// Try to submit
-		await page.getByRole('button', { name: 'Sign Up' }).click();
-		
-		// Should show password mismatch error
-		await expect(page.getByText('Passwords do not match')).toBeVisible();
+		// HTML5 validation should prevent submission
+		await expect(page.getByLabel('Email')).toHaveAttribute('required');
 	});
 
 	test('should navigate between login and signup pages', async ({ page }) => {
@@ -70,13 +63,11 @@ test.describe('Authentication Flow', () => {
 		// Login page
 		await page.goto('/auth/login');
 		await expect(page.getByLabel('Email')).toBeVisible();
-		await expect(page.getByLabel('Password')).toBeVisible();
-		await expect(page.getByLabel('Confirm Password')).not.toBeVisible();
+		await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible();
 		
-		// Signup page
+		// Signup page  
 		await page.goto('/auth/signup');
 		await expect(page.getByLabel('Email')).toBeVisible();
-		await expect(page.getByLabel('Password')).toBeVisible();
-		await expect(page.getByLabel('Confirm Password')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Send Magic Link' })).toBeVisible();
 	});
 });

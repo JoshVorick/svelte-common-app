@@ -1,103 +1,83 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { analytics } from '$lib/analytics';
-	import { logger } from '$lib/logger';
-	import type { ActionData } from './$types';
+  import { enhance } from '$app/forms';
+  import type { ActionData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
-
-	let loading = $state(false);
-	let email = $state('');
-	let password = $state('');
-
-	onMount(() => {
-		analytics.ui.componentMounted('LoginPage');
-		analytics.ui.pageViewed('login');
-		logger.info('Login page loaded', { component: 'LoginPage' });
-	});
-
-	function handleSubmit() {
-		analytics.auth.loginAttempt(email);
-		analytics.ui.formSubmitted('login-form', 'LoginPage');
-		logger.info('Login form submitted', { 
-			component: 'LoginPage',
-			metadata: { email: email.split('@')[0] + '@***' }
-		});
-		loading = true;
-	}
+  export let form: ActionData;
+  
+  let email = '';
+  let sending = false;
 </script>
 
-<Card>
-	<CardHeader>
-		<CardTitle>Sign In</CardTitle>
-	</CardHeader>
-	<CardContent>
-		<form method="POST" use:enhance={() => {
-			handleSubmit();
-			return async ({ result, update }) => {
-				loading = false;
-				if (result.type === 'redirect') {
-					analytics.auth.loginSuccess('user_id_placeholder');
-					logger.info('Login successful, redirecting', { 
-						component: 'LoginPage',
-						metadata: { redirectTo: result.location }
-					});
-					goto(result.location);
-				} else if (result.type === 'failure') {
-					analytics.auth.loginFailure(email, result.data?.error || 'Unknown error');
-					logger.warn('Login failed', { 
-						component: 'LoginPage',
-						metadata: { error: result.data?.error }
-					});
-					await update();
-				}
-			};
-		}}>
-			<div class="space-y-4">
-				<div>
-					<Label for="email">Email</Label>
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						required
-						bind:value={email}
-						placeholder="Enter your email"
-					/>
-				</div>
-				<div>
-					<Label for="password">Password</Label>
-					<Input
-						id="password"
-						name="password"
-						type="password"
-						required
-						bind:value={password}
-						placeholder="Enter your password"
-					/>
-				</div>
-				{#if form?.error}
-					<div class="text-red-500 text-sm">{form.error}</div>
-				{/if}
-				<Button 
-					type="submit" 
-					disabled={loading} 
-					class="w-full"
-					onclick={() => analytics.ui.buttonClicked('login-submit', 'LoginPage')}
-				>
-					{loading ? 'Signing in...' : 'Sign In'}
-				</Button>
-			</div>
-		</form>
-		<div class="mt-4 text-center">
-			<span class="text-sm text-gray-600">Don't have an account?</span>
-			<a href="/auth/signup" class="text-blue-600 hover:text-blue-500 ml-1">Sign up</a>
-		</div>
-	</CardContent>
-</Card>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Sign In
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Enter your email to sign in or create an account
+      </p>
+    </div>
+    
+    <form method="POST" use:enhance={() => {
+      sending = true;
+      return async ({ update }) => {
+        sending = false;
+        await update();
+      };
+    }} class="mt-8 space-y-6">
+      <div>
+        <label for="email" class="sr-only">Email address</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          bind:value={email}
+          placeholder="you@company.com"
+          required
+          class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+        />
+      </div>
+      
+      <div>
+        <button
+          type="submit"
+          disabled={sending}
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sending ? 'Sending...' : 'Send magic link'}
+        </button>
+      </div>
+
+      <div class="text-center">
+        <a href="/auth/signup" class="text-sm text-indigo-600 hover:text-indigo-500">
+          Don't have an account? Sign up
+        </a>
+      </div>
+    </form>
+    
+    {#if form?.success}
+      <div class="rounded-md bg-green-50 p-4">
+        <div class="text-sm text-green-700">
+          Check your email for the magic link.
+        </div>
+      </div>
+    {/if}
+    
+    {#if form?.message}
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="text-sm text-red-700">
+          {form.message}
+        </div>
+      </div>
+    {/if}
+
+    {#if form?.errors?.email}
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="text-sm text-red-700">
+          {form.errors.email[0]}
+        </div>
+      </div>
+    {/if}
+  </div>
+</div>
