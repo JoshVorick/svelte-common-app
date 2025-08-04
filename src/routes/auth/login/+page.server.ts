@@ -1,25 +1,46 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { redirect, fail } from '@sveltejs/kit';
+import { z } from 'zod';
 import type { Actions } from './$types';
 
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address')
+});
+
 export const actions: Actions = {
-	default: async ({ request, locals: { supabase } }) => {
-		const formData = await request.formData();
-		const email = formData.get('email') as string;
-		const password = formData.get('password') as string;
+  default: async ({ request, locals, url }) => {
+    const form = await request.formData();
+    const formData = {
+      email: form.get('email')
+    };
 
-		if (!email || !password) {
-			return fail(400, { error: 'Email and password are required' });
-		}
+    const result = loginSchema.safeParse(formData);
+    if (!result.success) {
+      return fail(400, {
+        errors: result.error.flatten().fieldErrors,
+        data: formData
+      });
+    }
 
-		const { error } = await supabase.auth.signInWithPassword({
-			email,
-			password
-		});
+    const { email } = result.data;
 
-		if (error) {
-			return fail(400, { error: error.message });
-		}
-
-		throw redirect(303, '/dashboard');
-	}
+    // Send magic link - let Supabase handle user existence securely
+    // This won't reveal whether the user exists or not
+    const emailRedirectTo = `${url.origin}/auth/callback`;
+    const { error } = await locals.supabase.auth.signInWithOtp({
+      email,
+      options: { 
+        emailRedirectTo,
+        shouldCreateUser: true // Allow auto-signup for seamless UX
+      }
+    });
+    
+    if (error) {
+      return fail(400, { 
+        message: error.message,
+        data: formData
+      });
+    }
+    
+    return { success: true };
+  }
 };

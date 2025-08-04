@@ -1,36 +1,41 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
+import { z } from 'zod';
 import type { Actions } from './$types';
 
+const signupSchema = z.object({
+  email: z.string().email('Please enter a valid email address')
+});
+
 export const actions: Actions = {
-	default: async ({ request, locals: { supabase } }) => {
-		const formData = await request.formData();
-		const email = formData.get('email') as string;
-		const password = formData.get('password') as string;
-		const confirmPassword = formData.get('confirmPassword') as string;
+  default: async ({ request, locals, url }) => {
+    const form = await request.formData();
+    const formData = {
+      email: form.get('email')
+    };
 
-		if (!email || !password || !confirmPassword) {
-			return fail(400, { error: 'All fields are required' });
-		}
+    const result = signupSchema.safeParse(formData);
+    if (!result.success) {
+      return fail(400, {
+        errors: result.error.flatten().fieldErrors,
+        data: formData
+      });
+    }
 
-		if (password !== confirmPassword) {
-			return fail(400, { error: 'Passwords do not match' });
-		}
+    const { email } = result.data;
 
-		if (password.length < 6) {
-			return fail(400, { error: 'Password must be at least 6 characters long' });
-		}
-
-		const { error } = await supabase.auth.signUp({
-			email,
-			password
-		});
-
-		if (error) {
-			return fail(400, { error: error.message });
-		}
-
-		return {
-			success: 'Account created successfully! Please check your email to verify your account.'
-		};
-	}
+    const emailRedirectTo = `${url.origin}/auth/callback`; // landing after click
+    const { error } = await locals.supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo, shouldCreateUser: true } // auto-signup enabled
+    });
+    
+    if (error) {
+      return fail(400, {
+        message: error.message,
+        data: formData
+      });
+    }
+    
+    return { success: true };
+  }
 };
